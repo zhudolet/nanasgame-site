@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Xmas Lights · Nana's Game</title>
+<meta name="description" content="Xmas Lights: connect the bulbs, close a triangle and light up Christmas. A cozy puzzle game for Android and iPhone.">
+<meta property="og:title" content="Xmas Lights">
+<meta property="og:description" content="Connect the bulbs, close a triangle and light up Christmas. A cozy puzzle.">
+<meta property="og:image" content="img/og.jpg">
+<meta name="theme-color" content="#141433">
+<link rel="icon" href="img/favicon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="lights" aria-hidden="true"><svg id="lights" viewBox="0 0 1200 60" preserveAspectRatio="xMidYMin slice"></svg></div>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./"><span class="dot"></span>Nana's Game</a>
+    <nav><a href="#game">Xmas Lights</a><a href="support/">Support</a><a href="privacy/">Privacy</a></nav>
+  </header>
+
+  <section class="hero" id="game">
+    <img class="icon" src="img/icon-256.png" alt="Xmas Lights app icon" width="128" height="128">
+    <h1>Xmas Lights</h1>
+    <p class="tag">Connect the bulbs. Close a triangle. Light up Christmas. A cozy puzzle you can play in five minutes or all evening.</p>
+    <div class="cta">
+      <a class="btn gold" href="mailto:contact@nanasgame.com?subject=Xmas%20Lights%20tester">Become a tester</a>
+      <a class="btn ghost" href="#features">See what's inside</a>
+    </div>
+    <span class="soon">Coming soon to Google Play and the App Store</span>
+  </section>
+
+  <div class="shots">
+    <img src="img/4-yard.webp" alt="Lighting a triangle of bulbs in the front yard" loading="lazy">
+    <img src="img/6-snowballs.webp" alt="Snowballs falling on the board" loading="lazy">
+    <img src="img/8-window.webp" alt="Drawing cords on a frosty window" loading="lazy">
+    <img src="img/2-map.webp" alt="The level map" loading="lazy">
+  </div>
+
+  <section class="features" id="features">
+    <div class="feat"><span class="em">🎄</span><h3>60 hand-made levels</h3><p>Six chapters, from The Front Yard to The Midnight Switch-On.</p></div>
+    <div class="feat"><span class="em">❄️</span><h3>Snow, window and ice</h3><p>Drag cords through crunchy snow, across frosty glass or over a frozen pond. Best with headphones.</p></div>
+    <div class="feat"><span class="em">✂️</span><h3>Christmas chaos</h3><p>Snowballs splat on your board and golden scissors snip loose cords. Think one move ahead.</p></div>
+    <div class="feat"><span class="em">☕</span><h3>Cozy, never stressful</h3><p>No timers. Ask for a hint, sip a Hot Cocoa for extra cords, or come back tomorrow for a gift.</p></div>
+  </section>
+
+  <section class="studio">
+    <h2>About Nana's Game</h2>
+    <p>We make small, warm games you can share with the whole family. Questions, ideas or bugs? Write to <a href="mailto:contact@nanasgame.com">contact@nanasgame.com</a>.</p>
+  </section>
+</div>
+<footer><div class="wrap"><span>© 2026 Nana's Game</span><span><a href="privacy/">Privacy policy</a> · <a href="support/">Support</a> · <a href="mailto:contact@nanasgame.com">contact@nanasgame.com</a></span></div></footer>
+<script>
+(function(){var s=document.getElementById('lights'),n=16,c=['#ff5a5f','#ffd23f','#3ddc84','#4fc3ff','#c48bff'],d='M0 8';
+for(var i=0;i<n;i++){var x0=i*1200/n,x1=x0+1200/n;d+=' Q'+(x0+x1)/2+' 34 '+x1+' 8';}
+var h='<path d="'+d+'" fill="none" stroke="#2c2a5c" stroke-width="2"/>';
+for(var j=0;j<n;j++){var x=(j+.5)*1200/n,y=21,k=c[j%c.length];h+='<g class="bulb"><rect x="'+(x-3)+'" y="'+(y-4)+'" width="6" height="6" fill="#55527f"/><ellipse cx="'+x+'" cy="'+(y+9)+'" rx="6" ry="9" fill="'+k+'"/><ellipse cx="'+x+'" cy="'+(y+9)+'" rx="14" ry="16" fill="'+k+'" opacity=".18"/></g>';}
+s.innerHTML=h;})();
+</script>
+</body>
+</html>
