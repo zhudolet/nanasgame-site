@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Xmas Lights · Nana's Game</title>
-<meta name="description" content="Xmas Lights: connect the bulbs, close a triangle and light up Christmas. Play all 60 levels in your browser, or join the Android test.">
+<meta name="description" content="Xmas Lights: connect the bulbs, close a triangle and light up Christmas. Play the first district in your browser, or join the Android test for all 60 levels.">
 <meta property="og:title" content="Xmas Lights · Nana's Game">
 <meta property="og:description" content="A cozy Christmas puzzle. Play the levels in your browser, or join the Android test.">
 <meta property="og:image" content="https://nanasgame.com/img/og.jpg">
@@ -165,6 +165,9 @@ section.row{padding-block:clamp(48px,8vw,96px)}
 .tile.boss{background:#3a1f6e}
 .tile.boss::after{content:"";position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red)}
 .tile.done{background:var(--gold);color:#2a1c00;box-shadow:0 4px 0 #b98700,0 0 18px rgba(255,210,63,.35)}
+.tile.locked{background:transparent;color:rgba(185,181,224,.55);box-shadow:inset 0 0 0 2px var(--line);cursor:default}
+.tile.locked:hover{transform:none;box-shadow:inset 0 0 0 2px var(--line)}
+.tile.locked.boss::after{display:none}
 .tile small{display:block;font-size:9px;letter-spacing:1px;line-height:1;margin-top:1px}
 .chapter .readout{min-height:3.1em;margin-top:14px;font-size:15px;max-width:none}
 .readout b{color:var(--ink);font-weight:800}
@@ -229,7 +232,7 @@ footer nav{display:flex;gap:6px 20px;flex-wrap:wrap}
       <button class="btn play" id="heroPlay" type="button">Play in your browser</button>
       <a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSdXcc9EGKCobpm0PpayjFovDhJnvt9fzfqe63KZqGMDl3-UOw/viewform">Become a tester</a>
     </div>
-    <p class="status">Android testers wanted now. Coming soon to Google Play and the App Store. All 60 levels and the city map are open on this page, no install needed.</p>
+    <p class="status">Android testers wanted now. Coming soon to Google Play and the App Store. District 1 is open on this page, no install needed. The other five districts are in the Android app.</p>
   </div>
 
   <div class="stage">
@@ -244,7 +247,6 @@ footer nav{display:flex;gap:6px 20px;flex-wrap:wrap}
     </div>
     <div class="under">
       <button class="btn ghost sm" id="goFull" type="button">Full screen</button>
-      <button class="btn ghost sm" id="tester" type="button" aria-pressed="false">Tester tools: off</button>
     </div>
     <p class="note" id="note" role="status"></p>
   </div>
@@ -273,7 +275,7 @@ footer nav{display:flex;gap:6px 20px;flex-wrap:wrap}
       <p>The level map is now a night city. Every level you clear switches on a little more of it, district by district, until the whole place glows.</p>
     </div>
     <div class="tally" aria-live="polite">
-      <b id="litN">0 / 60</b><span id="litT">levels lit by you</span>
+      <b id="litN">0 / 10</b><span id="litT">web demo levels lit by you</span>
       <div class="meter" aria-hidden="true"><i id="litBar"></i></div>
       <div><button class="btn sm" id="openMap" type="button">Open the city map</button></div>
     </div>
@@ -325,9 +327,9 @@ footer nav{display:flex;gap:6px 20px;flex-wrap:wrap}
     <div class="levels-head">
       <div>
         <h2>Six districts, 60 levels</h2>
-        <p>Pick any level and it opens in the game on this page. Nothing is locked here, so testers can go straight to the one they want to check.</p>
+        <p>District 1 is the web demo: pick any of its 10 levels and it opens in the game on this page. Districts 2 to 6 are in the Android app.</p>
       </div>
-      <div class="legend"><span><i style="background:var(--gold)"></i>Cleared by you</span><span><i style="background:#3a1f6e;box-shadow:inset 0 0 0 2px var(--red)"></i>District finale</span></div>
+      <div class="legend"><span><i style="background:var(--gold)"></i>Cleared by you</span><span><i style="background:#3a1f6e;box-shadow:inset 0 0 0 2px var(--red)"></i>District finale</span><span><i style="background:transparent;box-shadow:inset 0 0 0 2px var(--line)"></i>In the Android app</span></div>
     </div>
     <ol class="chapters" id="chapters"></ol>
     <p class="muted" id="noLevels" hidden>The level list could not be loaded. Open the game above and use its map instead.</p>
@@ -379,7 +381,7 @@ var calm=window.matchMedia('(prefers-reduced-motion:reduce)');
 var LEVELS=Array.isArray(window.NL_LEVELS)?window.NL_LEVELS:[];
 var CHAPTERS=Array.isArray(window.NL_CHAPTERS)?window.NL_CHAPTERS:[];
 var SURFACE={snow:'Snow',glass:'Frosty glass',ice:'Ice'};
-var testerWanted=false,prog={};
+var WEB=10,prog={};   /* levels playable on the web: District 1 */
 
 function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
 function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
@@ -410,26 +412,11 @@ function playLevel(i){
     try{n.openJIntro(i);say('')}catch(e){say('Could not jump to that level. Pick it from the map in the game.')}
   });
 }
-function applyTester(){
-  var b=$('tester');b.setAttribute('aria-pressed',testerWanted?'true':'false');b.textContent='Tester tools: '+(testerWanted?'on':'off');
-  var ok=false;
-  try{
-    var d=frame.contentDocument,t=d.getElementById('bTest'),st=d.getElementById('xlSiteTester');
-    /* the store build hides its test bar; show it here while tester tools are on */
-    if(testerWanted&&!st){st=d.createElement('style');st.id='xlSiteTester';st.textContent='#jTest:not([hidden]){display:flex!important}';d.head.appendChild(st)}
-    if(!testerWanted&&st)st.remove();
-    if(t){if(/on\s*$/.test(t.textContent)!==testerWanted)t.click();ok=true}
-  }catch(e){}
-  if(testerWanted)say(ok?'Tester tools are on: Prev, Next, Solve and Skip appear in every level, and Hot Cocoa never runs out.':'Open More in the game and switch on Test mode.');
-  else say('');
-}
 $('heroPlay').onclick=function(){open()};
 $('start').onclick=function(){open()};
 $('goFull').onclick=function(){setFull(true);load()};
 $('exitFull').onclick=function(){setFull(false);$('goFull').focus()};
 document.addEventListener('keydown',function(e){if(e.key==='Escape'&&phone.classList.contains('full'))setFull(false)});
-$('tester').onclick=function(){testerWanted=!testerWanted;lsSet('xl_site_tester',testerWanted?'1':'0');load().then(applyTester)};
-frame.addEventListener('load',function(){if(frame.getAttribute('src'))load().then(function(){if(testerWanted)applyTester()})});
 
 $('tryOne').onclick=function(){playLevel(0)};
 (function(){   /* the how-to clip plays only while it is on screen; with reduced motion it waits for a tap */
@@ -437,8 +424,6 @@ $('tryOne').onclick=function(){playLevel(0)};
   if(calm.matches||!('IntersectionObserver'in window)){v.controls=true;return}
   new IntersectionObserver(function(e){if(e[0].isIntersecting){var p=v.play();if(p&&p.catch)p.catch(function(){v.controls=true})}else v.pause()},{threshold:.35}).observe(v);
 })();
-testerWanted=lsGet('xl_site_tester')==='1';
-if(testerWanted){$('tester').setAttribute('aria-pressed','true');$('tester').textContent='Tester tools: on'}
 if(wide.matches)load();   /* phones start the game on tap, full screen */
 
 /* ---------- progress, shared with the game through localStorage ---------- */
@@ -446,12 +431,12 @@ function readProg(){var o={};try{o=JSON.parse(lsGet('nl_jprog')||'{}')||{}}catch
 function starsOf(i){var L=LEVELS[i];return L?(prog[L.id||('lv'+i)]||0):0}
 function sync(){
   prog=readProg();
-  var lit=0,stars=0,n=LEVELS.length||60,i;
+  var lit=0,stars=0,n=WEB,i;
   for(i=0;i<n;i++){var s=starsOf(i);if(s){lit++;stars+=s}}
   $('litBar').style.width=(100*lit/n)+'%';
   $('litN').textContent=lit+' / '+n;
-  $('litT').textContent='levels lit by you'+(stars?', '+stars+' of '+n*3+' stars':'');
-  document.querySelectorAll('.tile').forEach(function(t){
+  $('litT').textContent='web demo levels lit by you'+(stars?', '+stars+' of '+n*3+' stars':'');
+  document.querySelectorAll('button.tile').forEach(function(t){
     var s=starsOf(+t.dataset.i);t.classList.toggle('done',s>0);
     var sm=t.querySelector('small');if(sm)sm.textContent=s?'★★★'.slice(0,s):'';
   });
@@ -476,19 +461,20 @@ function renderLevels(){
     var C=CHAPTERS[c]||{name:'District '+(c+1)},tiles='';
     for(var i=c*per;i<Math.min(LEVELS.length,(c+1)*per);i++){
       var L=LEVELS[i];
-      tiles+='<button class="tile'+(L.tier==='boss'?' boss':'')+'" type="button" data-i="'+i+'" aria-label="Play level '+(i+1)+': '+esc(L.name)+'">'+(i+1)+'<small></small></button>';
+      tiles+=i<WEB?'<button class="tile'+(L.tier==='boss'?' boss':'')+'" type="button" data-i="'+i+'" aria-label="Play level '+(i+1)+': '+esc(L.name)+'">'+(i+1)+'<small></small></button>'
+        :'<span class="tile locked'+(L.tier==='boss'?' boss':'')+'" style="display:grid;place-items:center" aria-label="Level '+(i+1)+', in the Android app">'+(i+1)+'</span>';
     }
     html+='<li class="chapter"><div><div class="n">District '+(c+1)+'</div><h3>'+esc(C.name)+(SURFACE[C.surface]?'<span class="surface">'+SURFACE[C.surface]+'</span>':'')+'</h3>'+(C.intro?'<p>'+esc(C.intro)+'</p>':'')+'</div>'+
-      '<div><div class="tiles">'+tiles+'</div><p class="readout">Levels '+(c*per+1)+' to '+Math.min(LEVELS.length,(c+1)*per)+'. Pick one to play it here.</p></div></li>';
+      '<div><div class="tiles">'+tiles+'</div><p class="readout">Levels '+(c*per+1)+' to '+Math.min(LEVELS.length,(c+1)*per)+'. '+(c*per<WEB?'Pick one to play it here.':'In the Android app.')+'</p></div></li>';
   }
   host.innerHTML=html;
   function show(t){
     var i=+t.dataset.i,L=LEVELS[i],r=t.closest('.chapter').querySelector('.readout');
     r.innerHTML='<b>Level '+(i+1)+': '+esc(L.name)+'.</b> '+esc(L.quip||L.teach||'');
   }
-  host.addEventListener('click',function(e){var t=e.target.closest('.tile');if(t){show(t);playLevel(+t.dataset.i)}});
-  host.addEventListener('pointerover',function(e){var t=e.target.closest('.tile');if(t)show(t)});
-  host.addEventListener('focusin',function(e){var t=e.target.closest('.tile');if(t)show(t)});
+  host.addEventListener('click',function(e){var t=e.target.closest('button.tile');if(t){show(t);playLevel(+t.dataset.i)}});
+  host.addEventListener('pointerover',function(e){var t=e.target.closest('button.tile');if(t)show(t)});
+  host.addEventListener('focusin',function(e){var t=e.target.closest('button.tile');if(t)show(t)});
 }
 renderLevels();
 
