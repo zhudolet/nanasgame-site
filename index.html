@@ -1,62 +1,495 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Xmas Lights · Nana's Game</title>
-<meta name="description" content="Xmas Lights: connect the bulbs, close a triangle and light up Christmas. A cozy puzzle game for Android and iPhone.">
-<meta property="og:title" content="Xmas Lights">
-<meta property="og:description" content="Connect the bulbs, close a triangle and light up Christmas. A cozy puzzle.">
-<meta property="og:image" content="img/og.jpg">
+<meta name="description" content="Xmas Lights: connect the bulbs, close a triangle and light up Christmas. Play all 60 levels in your browser, or join the Android test.">
+<meta property="og:title" content="Xmas Lights · Nana's Game">
+<meta property="og:description" content="A cozy Christmas puzzle. Play the levels in your browser, or join the Android test.">
+<meta property="og:image" content="https://nanasgame.com/img/og.jpg">
 <meta name="theme-color" content="#141433">
 <link rel="icon" href="img/favicon.png">
-<link rel="stylesheet" href="style.css">
+<style>
+/* Layout: left-aligned copy beside a live, playable phone in the hero. One loud element: the game's own night city map,
+   shown dark, half lit and fully lit. Everything after it is quiet rows on the same night sky. */
+:root{
+  --night:#141433;      /* page sky, same as the app background */
+  --deep:#0c0c24;       /* bands and the phone bezel */
+  --dusk:#1d1a4a;       /* raised surfaces */
+  --ink:#f3f1ff;
+  --muted:#b9b5e0;
+  --gold:#ffd23f;       /* lit windows, stars, primary accent */
+  --green:#33d17a;      /* the game's Play button */
+  --red:#ff3b4e; --blue:#3d9bff; --pink:#ff5fc8; --orange:#ff8a1f;   /* bulb colours from the game */
+  --line:rgba(255,255,255,.13);
+  --display:'Fredoka','Nunito',system-ui,sans-serif;
+  --body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+@font-face{font-family:'Fredoka';font-weight:500;font-display:swap;src:url(fonts/fredoka-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Fredoka';font-weight:600;font-display:swap;src:url(fonts/fredoka-latin-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Fredoka';font-weight:700;font-display:swap;src:url(fonts/fredoka-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Nunito';font-weight:500;font-display:swap;src:url(fonts/nunito-latin-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Nunito';font-weight:700;font-display:swap;src:url(fonts/nunito-latin-700-normal.woff2) format('woff2')}
+@font-face{font-family:'Nunito';font-weight:800;font-display:swap;src:url(fonts/nunito-latin-800-normal.woff2) format('woff2')}
+
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:20px}
+html.locked{overflow:hidden}
+body{margin:0;background:var(--night);color:var(--ink);font-family:var(--body);font-weight:500;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+img,canvas{max-width:100%}
+a{color:var(--gold)}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.08}
+h2{font-size:clamp(30px,4.4vw,46px);font-weight:700;letter-spacing:-.01em}
+h3{font-size:21px;font-weight:600}
+p{margin:0}
+[hidden]{display:none!important}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px;border-radius:6px}
+.wrap{width:min(1120px,100%);margin-inline:auto;padding-inline:clamp(16px,4vw,32px)}
+.muted{color:var(--muted)}
+
+/* ---------- string of lights across the top ---------- */
+.string{display:flex;height:46px;overflow:hidden;pointer-events:none}
+.string i{flex:0 0 68px;position:relative;height:46px}
+.string i::before{content:"";position:absolute;left:0;right:0;top:-22px;height:36px;border:2px solid #2c2a66;border-top:0;border-radius:0 0 50% 50%/0 0 100% 100%}
+.string i::after{content:"";position:absolute;left:50%;top:13px;width:15px;height:22px;margin-left:-7.5px;border-radius:50% 50% 50% 50%/38% 38% 62% 62%;background:var(--c);box-shadow:0 0 14px 2px var(--c),0 -5px 0 -1px #3a376f;animation:twinkle 3.6s ease-in-out infinite;animation-delay:var(--d)}
+.string i:nth-child(6n+1){--c:var(--green);--d:-.2s}.string i:nth-child(6n+2){--c:var(--blue);--d:-1.9s}.string i:nth-child(6n+3){--c:var(--pink);--d:-.9s}
+.string i:nth-child(6n+4){--c:var(--red);--d:-2.6s}.string i:nth-child(6n+5){--c:var(--gold);--d:-1.3s}.string i:nth-child(6n){--c:var(--orange);--d:-3.1s}
+@keyframes twinkle{0%,100%{opacity:1}42%{opacity:.5}47%{opacity:.95}53%{opacity:.6}}
+
+/* ---------- nav ---------- */
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:14px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:20px;color:var(--ink);text-decoration:none}
+.brand::before{content:"";width:13px;height:13px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold)}
+.top nav{display:flex;gap:4px 22px;flex-wrap:wrap}
+.top nav a{font-family:var(--display);font-weight:600;font-size:16px;color:var(--muted);text-decoration:none;padding:4px 0}
+.top nav a:hover{color:var(--ink)}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--display);font-weight:700;font-size:18px;line-height:1;padding:16px 26px;border-radius:999px;border:0;cursor:pointer;text-decoration:none;color:#201600;background:var(--gold);box-shadow:0 5px 0 #b98700,0 14px 30px rgba(255,210,63,.22);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #b98700}
+.btn.play{color:#fff;background:linear-gradient(#56e596,#25b866);box-shadow:0 5px 0 #14803f,0 14px 30px rgba(51,209,122,.25);text-shadow:0 2px 0 rgba(0,70,30,.35)}
+.btn.play:active{box-shadow:0 1px 0 #14803f}
+.btn.ghost{color:var(--ink);background:transparent;box-shadow:inset 0 0 0 2px var(--line)}
+.btn.ghost:active{transform:translateY(1px);box-shadow:inset 0 0 0 2px var(--line)}
+.btn.sm{font-size:15px;padding:11px 18px}
+.btn[aria-pressed="true"]{background:var(--dusk);color:var(--gold);box-shadow:inset 0 0 0 2px var(--gold)}
+
+/* ---------- hero ---------- */
+.hero{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(24px,5vw,72px);align-items:center;padding-block:clamp(20px,4vw,48px) clamp(36px,6vw,72px)}
+.title{font-weight:700;font-size:clamp(92px,11.5vw,148px);line-height:.86;letter-spacing:-.02em;isolation:isolate;margin-left:-.03em}
+.title span{display:block;position:relative;width:max-content;max-width:100%}
+.title span::before{content:attr(data-text);position:absolute;left:0;top:0;z-index:-1}
+.title .xmas{color:#fff;font-size:.62em;margin-left:.08em}
+.title .xmas::before{-webkit-text-stroke:.24em #2b1d78;color:#2b1d78}
+.title .lights{background:linear-gradient(#fff08a,#ffc21a 50%,#ff9a1f 80%);-webkit-background-clip:text;background-clip:text;color:transparent;padding:.2em .05em .3em 0;margin:-.2em 0 -.3em}
+.title .lights::before{padding-top:.2em;-webkit-text-stroke:.16em #7a3906;color:#7a3906;text-shadow:0 .07em 0 #4f2403,0 .16em .3em rgba(255,170,40,.35)}
+.lede{font-size:clamp(19px,2.1vw,24px);line-height:1.4;max-width:30ch;margin-top:clamp(36px,4.4vw,58px)}
+.lede b{font-weight:800;color:#fff}
+.cta{display:flex;gap:14px;flex-wrap:wrap;margin-top:30px}
+.status{margin-top:22px;font-size:15px;color:var(--muted);max-width:44ch}
+
+.stage{justify-self:center;width:min(392px,100%)}
+.phone{position:relative;height:clamp(560px,calc(100vh - 150px),760px);border-radius:46px;border:11px solid var(--deep);background:var(--night) url(img/poster.webp) center/cover;box-shadow:0 0 0 2px #34317a,0 40px 90px rgba(0,0,0,.55),0 0 120px rgba(255,200,80,.12);overflow:hidden;display:flex;flex-direction:column}
+.phone iframe{flex:1;width:100%;border:0;display:block;min-height:0}
+.phone .start{position:absolute;inset:0;background:transparent;border:0;border-radius:34px;cursor:pointer}
+.phone .bar{display:none}
+.under{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.note{min-height:1.4em;margin-top:10px;text-align:center;font-size:14px;color:var(--muted)}
+
+/* full-screen play */
+.phone.full{position:fixed;inset:0;z-index:50;height:auto;border:0;border-radius:0;background:var(--deep);box-shadow:none}
+.phone.full .bar{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--deep);border-bottom:1px solid var(--line);font-size:14px}
+.phone.full .bar .now{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);text-align:center}
+.phone.full .bar button,.phone.full .bar a{font-family:var(--display);font-weight:600;font-size:14px;color:var(--ink);background:var(--dusk);border:0;border-radius:999px;padding:8px 14px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.phone.full iframe{width:min(560px,100%);margin-inline:auto}
+.phone.full .start{display:none}
+
+/* ---------- how to play ---------- */
+.how{display:grid;grid-template-columns:300px minmax(0,1fr);gap:clamp(28px,6vw,88px);align-items:center;padding-block:clamp(8px,2vw,24px) clamp(48px,7vw,88px)}
+.clip{display:block;width:min(300px,100%);height:auto;border-radius:40px;border:9px solid var(--deep);background:var(--deep);box-shadow:0 0 0 2px #34317a,0 30px 70px rgba(0,0,0,.5)}
+.how h2+p{margin-top:14px;color:var(--muted);max-width:46ch}
+.how .steps{margin-top:28px}
+.how .cta{margin-top:28px}
+
+/* ---------- the city map ---------- */
+.city{background:linear-gradient(var(--night),var(--deep) 22%);padding-block:clamp(28px,5vw,56px) clamp(40px,6vw,72px)}
+.city-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px 40px;align-items:end}
+.city-head p{max-width:56ch;margin-top:12px;color:var(--muted)}
+.tally{font-family:var(--display);font-weight:600;font-size:17px;text-align:right;font-variant-numeric:tabular-nums}
+.tally b{display:block;font-size:44px;line-height:1;color:var(--gold);font-weight:700}
+.tally .btn{margin-top:14px}
+.shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,3vw,36px);margin-top:clamp(24px,4vw,40px)}
+.shots figure{margin:0;min-width:0}
+.shots img{display:block;width:100%;height:auto;border-radius:clamp(20px,3vw,34px);box-shadow:0 0 0 2px #34317a,0 24px 60px rgba(0,0,0,.45)}
+.shots figure:last-child img{box-shadow:0 0 0 2px #7a5a12,0 24px 60px rgba(0,0,0,.45),0 0 90px rgba(255,200,80,.22)}
+.shots figcaption{margin-top:14px;font-family:var(--display);font-weight:600;font-size:17px;text-align:center}
+.shots figcaption span{display:block;font-family:var(--body);font-weight:500;font-size:15px;color:var(--muted)}
+
+/* ---------- sections ---------- */
+section.row{padding-block:clamp(48px,8vw,96px)}
+.split{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,5vw,72px)}
+.split>div:first-child p{margin-top:14px;color:var(--muted);max-width:38ch}
+.build{display:inline-block;margin-top:18px;font-family:var(--display);font-weight:600;font-size:15px;color:var(--night);background:var(--gold);border-radius:8px;padding:4px 10px}
+
+.notes{list-style:none;margin:0;padding:0;display:grid;gap:22px}
+.notes li{display:grid;grid-template-columns:26px minmax(0,1fr);gap:16px;align-items:start}
+.notes li::before{content:"";width:18px;height:26px;margin-top:3px;border-radius:50% 50% 50% 50%/38% 38% 62% 62%;background:var(--c,var(--gold));box-shadow:0 0 16px var(--c,var(--gold))}
+.notes li:nth-child(4n+1){--c:var(--gold)}.notes li:nth-child(4n+2){--c:var(--red)}.notes li:nth-child(4n+3){--c:var(--green)}.notes li:nth-child(4n){--c:var(--blue)}
+.notes p{color:var(--muted);margin-top:4px;max-width:52ch}
+.earlier{margin-top:38px;padding-top:26px;border-top:1px solid var(--line)}
+.earlier h3{font-size:17px;color:var(--muted);font-weight:600}
+.earlier ul{margin:12px 0 0;padding-left:20px;color:var(--muted);display:grid;gap:6px;max-width:60ch}
+.earlier li::marker{color:var(--gold)}
+
+.inside{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(20px,4vw,48px);margin-top:clamp(40px,6vw,72px);padding-top:clamp(28px,4vw,44px);border-top:1px solid var(--line)}
+.inside p{color:var(--muted);margin-top:8px}
+
+/* ---------- chapters and levels ---------- */
+.levels{background:var(--deep)}
+.levels-head{display:flex;justify-content:space-between;align-items:end;gap:20px;flex-wrap:wrap}
+.levels-head p{color:var(--muted);max-width:52ch;margin-top:12px}
+.chapters{list-style:none;margin:clamp(28px,4vw,44px) 0 0;padding:0}
+.chapter{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:18px clamp(24px,5vw,72px);padding-block:28px;border-top:1px solid var(--line)}
+.chapter .n{font-family:var(--display);font-weight:600;font-size:15px;color:var(--gold)}
+.chapter h3{font-size:27px;margin-top:2px}
+.chapter .surface{display:inline-block;margin-left:8px;font-family:var(--body);font-weight:800;font-size:12px;vertical-align:middle;padding:3px 9px;border-radius:999px;background:var(--dusk);color:var(--muted)}
+.chapter p{color:var(--muted);margin-top:10px;max-width:46ch}
+.tiles{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:8px}
+.tile{position:relative;aspect-ratio:1;min-width:0;border-radius:14px;border:0;cursor:pointer;font-family:var(--display);font-weight:700;font-size:18px;color:var(--ink);background:var(--dusk);box-shadow:inset 0 0 0 2px rgba(255,255,255,.08),0 4px 0 #0a0a1f;transition:transform .1s}
+.tile:hover{transform:translateY(-2px);box-shadow:inset 0 0 0 2px var(--gold),0 6px 0 #0a0a1f}
+.tile.boss{background:#3a1f6e}
+.tile.boss::after{content:"";position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red)}
+.tile.done{background:var(--gold);color:#2a1c00;box-shadow:0 4px 0 #b98700,0 0 18px rgba(255,210,63,.35)}
+.tile small{display:block;font-size:9px;letter-spacing:1px;line-height:1;margin-top:1px}
+.chapter .readout{min-height:3.1em;margin-top:14px;font-size:15px;max-width:none}
+.readout b{color:var(--ink);font-weight:800}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:14px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-1px}
+
+/* ---------- testers ---------- */
+.steps{margin:0;padding:0;list-style:none;counter-reset:s;display:grid;gap:20px}
+.steps li{counter-increment:s;display:grid;grid-template-columns:44px minmax(0,1fr);gap:16px}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:44px;height:44px;border-radius:50%;font-family:var(--display);font-weight:700;font-size:20px;color:var(--night);background:var(--gold)}
+.steps p{color:var(--muted);margin-top:4px;max-width:50ch}
+.steps .btn{margin-top:12px}
+.feedback{margin-top:34px;padding:22px 24px;border-radius:20px;background:var(--dusk)}
+.feedback p{color:var(--muted);margin-top:6px;max-width:56ch}
+.feedback .cta{margin-top:16px}
+
+footer{border-top:1px solid var(--line);padding-block:36px 48px;color:var(--muted);font-size:15px}
+footer .cols{display:flex;justify-content:space-between;gap:20px 40px;flex-wrap:wrap}
+footer p{max-width:52ch}
+footer nav{display:flex;gap:6px 20px;flex-wrap:wrap}
+
+@media (max-width:880px){
+  .hero,.split,.chapter,.city-head,.how{grid-template-columns:minmax(0,1fr)}
+  .clip{width:min(270px,78%);margin-inline:auto}
+  .tally{text-align:left}
+  .tiles{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .inside{grid-template-columns:minmax(0,1fr)}
+  .top nav a.opt{display:none}
+  .shots{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px}
+  .shots figure{flex:0 0 72%;scroll-snap-align:center}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .string i::after{animation:none}
+  .btn,.tile{transition:none}
+}
+</style>
 </head>
 <body>
-<div class="lights" aria-hidden="true"><svg id="lights" viewBox="0 0 1200 60" preserveAspectRatio="xMidYMin slice"></svg></div>
-<div class="wrap">
-  <header class="top">
-    <a class="brand" href="./"><span class="dot"></span>Nana's Game</a>
-    <nav><a href="#game">Xmas Lights</a><a href="support/">Support</a><a href="privacy/">Privacy</a></nav>
-  </header>
 
-  <section class="hero" id="game">
-    <img class="icon" src="img/icon-256.png" alt="Xmas Lights app icon" width="128" height="128">
-    <h1>Xmas Lights</h1>
-    <p class="tag">Connect the bulbs. Close a triangle. Light up Christmas. A cozy puzzle you can play in five minutes or all evening.</p>
+<div class="string" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+
+<header class="wrap top">
+  <a class="brand" href="./">Nana's Game</a>
+  <nav aria-label="Site">
+    <a href="#play">Play</a>
+    <a href="#how" class="opt">How to play</a>
+    <a href="#new" class="opt">What's new</a>
+    <a href="#levels">Levels</a>
+    <a href="#testers">Testers</a>
+    <a href="support/">Support</a>
+    <a href="privacy/">Privacy</a>
+  </nav>
+</header>
+
+<main>
+<section class="wrap hero" id="play">
+  <div>
+    <h1 class="title" aria-label="Xmas Lights"><span class="xmas" data-text="Xmas" aria-hidden="true">Xmas</span><span class="lights" data-text="Lights" aria-hidden="true">Lights</span></h1>
+    <p class="lede"><b>Connect the bulbs. Close a triangle. Light up Christmas.</b> A cozy puzzle you can play in five minutes or all evening.</p>
     <div class="cta">
-      <a class="btn gold" href="https://docs.google.com/forms/d/e/1FAIpQLSdXcc9EGKCobpm0PpayjFovDhJnvt9fzfqe63KZqGMDl3-UOw/viewform" target="_blank" rel="noopener">Become a tester</a>
-      <a class="btn ghost" href="#features">See what's inside</a>
+      <button class="btn play" id="heroPlay" type="button">Play in your browser</button>
+      <a class="btn" href="https://docs.google.com/forms/d/e/1FAIpQLSdXcc9EGKCobpm0PpayjFovDhJnvt9fzfqe63KZqGMDl3-UOw/viewform">Become a tester</a>
     </div>
-    <span class="soon">Android testers wanted now. Coming soon to Google Play and the App Store.</span>
-  </section>
-
-  <div class="shots">
-    <img src="img/4-yard.webp" alt="Lighting a triangle of bulbs in the front yard" loading="lazy">
-    <img src="img/6-snowballs.webp" alt="Snowballs falling on the board" loading="lazy">
-    <img src="img/8-window.webp" alt="Drawing cords on a frosty window" loading="lazy">
-    <img src="img/2-map.webp" alt="The level map" loading="lazy">
+    <p class="status">Android testers wanted now. Coming soon to Google Play and the App Store. All 60 levels and the city map are open on this page, no install needed.</p>
   </div>
 
-  <section class="features" id="features">
-    <div class="feat"><span class="em">🎄</span><h3>60 hand-made levels</h3><p>Six chapters, from The Front Yard to The Midnight Switch-On.</p></div>
-    <div class="feat"><span class="em">❄️</span><h3>Snow, window and ice</h3><p>Drag cords through crunchy snow, across frosty glass or over a frozen pond. Best with headphones.</p></div>
-    <div class="feat"><span class="em">✂️</span><h3>Christmas chaos</h3><p>Snowballs splat on your board and golden scissors snip loose cords. Think one move ahead.</p></div>
-    <div class="feat"><span class="em">☕</span><h3>Cozy, never stressful</h3><p>No timers. Ask for a hint, sip a Hot Cocoa for extra cords, or come back tomorrow for a gift.</p></div>
-  </section>
+  <div class="stage">
+    <div class="phone" id="phone">
+      <div class="bar">
+        <button type="button" id="exitFull">Back to site</button>
+        <span class="now" id="nowFull">Xmas Lights</span>
+        <a id="mailFull" href="mailto:contact@nanasgame.com?subject=Xmas%20Lights%20feedback">Feedback</a>
+      </div>
+      <iframe id="game" title="Xmas Lights, playable game" allow="autoplay; fullscreen"></iframe>
+      <button class="start" id="start" type="button" aria-label="Start the game full screen"></button>
+    </div>
+    <div class="under">
+      <button class="btn ghost sm" id="goFull" type="button">Full screen</button>
+      <button class="btn ghost sm" id="tester" type="button" aria-pressed="false">Tester tools: off</button>
+    </div>
+    <p class="note" id="note" role="status"></p>
+  </div>
+</section>
 
-  <section class="studio">
-    <h2>About Nana's Game</h2>
-    <p>We make small, warm games you can share with the whole family. Questions, ideas or bugs? Write to <a href="mailto:contact@nanasgame.com">contact@nanasgame.com</a>.</p>
-  </section>
-</div>
-<footer><div class="wrap"><span>© 2026 Nana's Game</span><span><a href="privacy/">Privacy policy</a> · <a href="support/">Support</a> · <a href="mailto:contact@nanasgame.com">contact@nanasgame.com</a></span></div></footer>
+<section class="wrap how" id="how" aria-labelledby="howH">
+  <video class="clip" id="clip" muted loop playsinline preload="none" poster="img/howto-poster.webp" width="480" height="960" aria-label="Level 1 being played: three cords are dragged between three bulbs, the triangle lights up and the present inside is unwrapped">
+    <source src="img/howto.mp4" type="video/mp4">
+  </video>
+  <div>
+    <h2 id="howH">How to play</h2>
+    <p>This is level 1, played start to finish.</p>
+    <ol class="steps">
+      <li><div><h3>Drag a cord from bulb to bulb</h3><p>Put your finger on one bulb and pull the cord to another. The guide line shows where it will go.</p></div></li>
+      <li><div><h3>Close a triangle around the present</h3><p>Three cords make a triangle. Close one around a present and it lights up and unwraps.</p></div></li>
+      <li><div><h3>Make every cord count</h3><p>Each level gives you a handful of cords. Finish with cords to spare and you win three stars.</p></div></li>
+    </ol>
+    <div class="cta"><button class="btn play sm" id="tryOne" type="button">Try level 1</button></div>
+  </div>
+</section>
+
+<section class="city" aria-labelledby="cityH">
+  <div class="wrap city-head">
+    <div>
+      <h2 id="cityH">Light up the city</h2>
+      <p>The level map is now a night city. Every level you clear switches on a little more of it, district by district, until the whole place glows.</p>
+    </div>
+    <div class="tally" aria-live="polite">
+      <b id="litN">0</b><span id="litT">of 60 levels lit by you</span>
+      <div><button class="btn sm" id="openMap" type="button">Open the city map</button></div>
+    </div>
+  </div>
+  <div class="wrap">
+    <div class="shots" tabindex="0" role="group" aria-label="The city map at three stages">
+      <figure><img src="img/city-start.webp" width="618" height="1338" loading="lazy" alt="The city map at the start: six dark districts and 0% of the city lit"><figcaption>Where you start<span>Six dark districts</span></figcaption></figure>
+      <figure><img src="img/city-halfway.webp" width="618" height="1338" loading="lazy" alt="The city map halfway: the first three districts glowing, 53% of the city lit"><figcaption>Halfway there<span>Three districts lit up</span></figcaption></figure>
+      <figure><img src="img/city-lit.webp" width="618" height="1338" loading="lazy" alt="The city map finished: every district glowing, 100% of the city lit"><figcaption>All 60 levels cleared<span>The whole city glows</span></figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="wrap row" id="new">
+  <div class="split">
+    <div>
+      <h2>New in this build</h2>
+      <p>Fresh from the workshop and rolling out to Android testers.</p>
+      <span class="build">Build 107</span>
+    </div>
+    <div>
+      <ul class="notes">
+        <li><div><h3>Light up the city</h3><p>A night city map that glows brighter as you clear levels.</p></div></li>
+        <li><div><h3>Every cord now counts</h3><p>All 60 levels have been rebalanced, so each cord you lay matters.</p></div></li>
+        <li><div><h3>Nicer daily gift and star bar</h3><p>Come back tomorrow for a present, and watch your stars fill up as you play.</p></div></li>
+        <li><div><h3>Smoother map, lots of small fixes</h3><p>The map glides, and a long list of little rough edges is gone.</p></div></li>
+      </ul>
+      <div class="earlier">
+        <h3>From the build before</h3>
+        <ul>
+          <li>A cord guide: a straight line shows where your cord really goes, and turns red if something is in the way.</li>
+          <li>Smoother sound, with no crackle when lots of points land at once.</li>
+          <li>Levels use the full width of the screen.</li>
+          <li>Prettier glow and flicker on the bulbs.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="inside">
+    <div><h3>Snow, window and ice</h3><p>Drag cords through crunchy snow, across frosty glass or over a frozen pond. Best with headphones.</p></div>
+    <div><h3>Christmas chaos</h3><p>Snowballs splat on your board and golden scissors snip loose cords. Think one move ahead.</p></div>
+    <div><h3>Cozy, never stressful</h3><p>No timers. Ask for a hint, sip a Hot Cocoa for extra cords, or come back tomorrow for a gift.</p></div>
+  </div>
+</section>
+
+<section class="levels row" id="levels">
+  <div class="wrap">
+    <div class="levels-head">
+      <div>
+        <h2>Six districts, 60 levels</h2>
+        <p>Pick any level and it opens in the game on this page. Nothing is locked here, so testers can go straight to the one they want to check.</p>
+      </div>
+      <div class="legend"><span><i style="background:var(--gold)"></i>Cleared by you</span><span><i style="background:#3a1f6e;box-shadow:inset 0 0 0 2px var(--red)"></i>District finale</span></div>
+    </div>
+    <ol class="chapters" id="chapters"></ol>
+    <p class="muted" id="noLevels" hidden>The level list could not be loaded. Open the game above and use its map instead.</p>
+  </div>
+</section>
+
+<section class="wrap row" id="testers">
+  <div class="split">
+    <div>
+      <h2>Help us test on Android</h2>
+      <p>We are a small studio and every tester makes the game better. It takes about two minutes to join.</p>
+    </div>
+    <div>
+      <ol class="steps">
+        <li><div><h3>Sign up</h3><p>Fill in the short form with the Google account you use on your Android phone.</p><a class="btn sm" href="https://docs.google.com/forms/d/e/1FAIpQLSdXcc9EGKCobpm0PpayjFovDhJnvt9fzfqe63KZqGMDl3-UOw/viewform">Become a tester</a></div></li>
+        <li><div><h3>Get added to the test</h3><p>We add your account to the closed test and send you the Google Play link.</p></div></li>
+        <li><div><h3>Install from Google Play</h3><p>Open the link on your phone, tap Become a tester, then install Xmas Lights. Already on the list? <a href="https://play.google.com/apps/testing/com.nanasgame.xmaslights">Open the tester page on Google Play</a>.</p></div></li>
+        <li><div><h3>Tell us what you find</h3><p>Bugs, levels that feel unfair, sounds that annoy you, ideas. All of it helps.</p></div></li>
+      </ol>
+      <div class="feedback">
+        <h3>Send feedback</h3>
+        <p id="fbLine">Write to <a href="mailto:contact@nanasgame.com">contact@nanasgame.com</a>. If you are in a level on this page, the button adds its name to the email for you.</p>
+        <div class="cta"><a class="btn sm" id="mail" href="mailto:contact@nanasgame.com?subject=Xmas%20Lights%20feedback">Email feedback</a></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap cols">
+    <p><b>About Nana's Game.</b> We make small, warm games you can share with the whole family. Questions, ideas or bugs? Write to <a href="mailto:contact@nanasgame.com">contact@nanasgame.com</a>.</p>
+    <div>
+      <nav aria-label="Footer"><a href="privacy/">Privacy policy</a><a href="support/">Support</a></nav>
+      <p style="margin-top:8px">© 2026 Nana's Game</p>
+    </div>
+  </div>
+</footer>
+
+<script src="play/levels/journey-levels-city.js"></script>
 <script>
-(function(){var s=document.getElementById('lights'),n=16,c=['#ff5a5f','#ffd23f','#3ddc84','#4fc3ff','#c48bff'],d='M0 8';
-for(var i=0;i<n;i++){var x0=i*1200/n,x1=x0+1200/n;d+=' Q'+(x0+x1)/2+' 34 '+x1+' 8';}
-var h='<path d="'+d+'" fill="none" stroke="#2c2a5c" stroke-width="2"/>';
-for(var j=0;j<n;j++){var x=(j+.5)*1200/n,y=21,k=c[j%c.length];h+='<g class="bulb"><rect x="'+(x-3)+'" y="'+(y-4)+'" width="6" height="6" fill="#55527f"/><ellipse cx="'+x+'" cy="'+(y+9)+'" rx="6" ry="9" fill="'+k+'"/><ellipse cx="'+x+'" cy="'+(y+9)+'" rx="14" ry="16" fill="'+k+'" opacity=".18"/></g>';}
-s.innerHTML=h;})();
+(function(){
+'use strict';
+var GAME_URL='play/index.html';
+var $=function(id){return document.getElementById(id)};
+var phone=$('phone'),frame=$('game'),note=$('note');
+var wide=window.matchMedia('(min-width:881px)');
+var calm=window.matchMedia('(prefers-reduced-motion:reduce)');
+var LEVELS=Array.isArray(window.NL_LEVELS)?window.NL_LEVELS:[];
+var CHAPTERS=Array.isArray(window.NL_CHAPTERS)?window.NL_CHAPTERS:[];
+var SURFACE={snow:'Snow',glass:'Frosty glass',ice:'Ice'};
+var testerWanted=false,prog={};
+
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+function say(t){note.textContent=t||''}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+/* ---------- the embedded game ---------- */
+function api(){try{var w=frame.contentWindow;return w&&w.__nl&&w.__nl.LEVELS?w.__nl:null}catch(e){return null}}
+function load(){
+  if(!frame.getAttribute('src')){frame.src=GAME_URL;$('start').hidden=true}
+  return new Promise(function(done){
+    var t0=Date.now();
+    (function poll(){var n=api();if(n){if(!LEVELS.length){try{LEVELS=n.LEVELS;CHAPTERS=frame.contentWindow.NL_CHAPTERS||[];renderLevels()}catch(e){}}return setTimeout(function(){done(n)},350)}if(Date.now()-t0>9000)return done(null);setTimeout(poll,150)})();
+  });
+}
+function setFull(on){
+  phone.classList.toggle('full',on);document.documentElement.classList.toggle('locked',on);
+  if(on)$('exitFull').focus();
+}
+function open(){
+  if(wide.matches){if(!phone.classList.contains('full'))phone.scrollIntoView({block:'center',behavior:calm.matches?'auto':'smooth'})}
+  else setFull(true);
+  return load();
+}
+function playLevel(i){
+  open().then(function(n){
+    if(!n){say('The game is open. Pick the level from its map.');return}
+    try{n.openJIntro(i);say('')}catch(e){say('Could not jump to that level. Pick it from the map in the game.')}
+  });
+}
+function applyTester(){
+  var b=$('tester');b.setAttribute('aria-pressed',testerWanted?'true':'false');b.textContent='Tester tools: '+(testerWanted?'on':'off');
+  var ok=false;
+  try{
+    var d=frame.contentDocument,t=d.getElementById('bTest'),st=d.getElementById('xlSiteTester');
+    /* the store build hides its test bar; show it here while tester tools are on */
+    if(testerWanted&&!st){st=d.createElement('style');st.id='xlSiteTester';st.textContent='#jTest:not([hidden]){display:flex!important}';d.head.appendChild(st)}
+    if(!testerWanted&&st)st.remove();
+    if(t){if(/on\s*$/.test(t.textContent)!==testerWanted)t.click();ok=true}
+  }catch(e){}
+  if(testerWanted)say(ok?'Tester tools are on: Prev, Next, Solve and Skip appear in every level, and Hot Cocoa never runs out.':'Open More in the game and switch on Test mode.');
+  else say('');
+}
+$('heroPlay').onclick=function(){open()};
+$('start').onclick=function(){open()};
+$('goFull').onclick=function(){setFull(true);load()};
+$('exitFull').onclick=function(){setFull(false);$('goFull').focus()};
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&phone.classList.contains('full'))setFull(false)});
+$('tester').onclick=function(){testerWanted=!testerWanted;lsSet('xl_site_tester',testerWanted?'1':'0');load().then(applyTester)};
+frame.addEventListener('load',function(){if(frame.getAttribute('src'))load().then(function(){if(testerWanted)applyTester()})});
+
+$('tryOne').onclick=function(){playLevel(0)};
+(function(){   /* the how-to clip plays only while it is on screen; with reduced motion it waits for a tap */
+  var v=$('clip');
+  if(calm.matches||!('IntersectionObserver'in window)){v.controls=true;return}
+  new IntersectionObserver(function(e){if(e[0].isIntersecting){var p=v.play();if(p&&p.catch)p.catch(function(){v.controls=true})}else v.pause()},{threshold:.35}).observe(v);
+})();
+testerWanted=lsGet('xl_site_tester')==='1';
+if(testerWanted){$('tester').setAttribute('aria-pressed','true');$('tester').textContent='Tester tools: on'}
+if(wide.matches)load();   /* phones start the game on tap, full screen */
+
+/* ---------- progress, shared with the game through localStorage ---------- */
+function readProg(){var o={};try{o=JSON.parse(lsGet('nl_jprog')||'{}')||{}}catch(e){}return o}
+function starsOf(i){var L=LEVELS[i];return L?(prog[L.id||('lv'+i)]||0):0}
+function sync(){
+  prog=readProg();
+  var lit=0,stars=0,n=LEVELS.length||60,i;
+  for(i=0;i<n;i++){var s=starsOf(i);if(s){lit++;stars+=s}}
+  $('litN').textContent=lit;
+  $('litT').textContent='of '+n+' levels lit by you'+(stars?', '+stars+' of '+n*3+' stars':'');
+  document.querySelectorAll('.tile').forEach(function(t){
+    var s=starsOf(+t.dataset.i);t.classList.toggle('done',s>0);
+    var sm=t.querySelector('small');if(sm)sm.textContent=s?'★★★'.slice(0,s):'';
+  });
+  var n2=api(),cur=null;try{if(n2&&n2.G&&n2.G.L&&n2.G.mode==='journey')cur=n2.G}catch(e){}
+  var label=cur?'Level '+(cur.idx+1)+': '+cur.L.name:'';
+  var href='mailto:contact@nanasgame.com?subject='+encodeURIComponent('Xmas Lights feedback'+(label?' ('+label+', web)':''));
+  $('mail').href=href;$('mailFull').href=href;
+  $('mail').textContent=label?'Email feedback on level '+(cur.idx+1):'Email feedback';
+  $('nowFull').textContent=label||'Xmas Lights';
+}
+window.addEventListener('storage',sync);
+setInterval(function(){if(!document.hidden)sync()},1500);
+$('openMap').onclick=function(){open().then(function(n){if(!n){say('The game is open. Tap Play to see the map.');return}try{n.openMap();say('')}catch(e){say('Tap Play in the game to see the map.')}})};
+
+/* ---------- chapters and level tiles ---------- */
+function renderLevels(){
+  var host=$('chapters');
+  $('noLevels').hidden=!!LEVELS.length;
+  if(!LEVELS.length||host.firstChild)return;
+  var per=Math.ceil(LEVELS.length/Math.max(1,CHAPTERS.length||6)),html='';
+  for(var c=0;c*per<LEVELS.length;c++){
+    var C=CHAPTERS[c]||{name:'District '+(c+1)},tiles='';
+    for(var i=c*per;i<Math.min(LEVELS.length,(c+1)*per);i++){
+      var L=LEVELS[i];
+      tiles+='<button class="tile'+(L.tier==='boss'?' boss':'')+'" type="button" data-i="'+i+'" aria-label="Play level '+(i+1)+': '+esc(L.name)+'">'+(i+1)+'<small></small></button>';
+    }
+    html+='<li class="chapter"><div><div class="n">District '+(c+1)+'</div><h3>'+esc(C.name)+(SURFACE[C.surface]?'<span class="surface">'+SURFACE[C.surface]+'</span>':'')+'</h3>'+(C.intro?'<p>'+esc(C.intro)+'</p>':'')+'</div>'+
+      '<div><div class="tiles">'+tiles+'</div><p class="readout">Levels '+(c*per+1)+' to '+Math.min(LEVELS.length,(c+1)*per)+'. Pick one to play it here.</p></div></li>';
+  }
+  host.innerHTML=html;
+  function show(t){
+    var i=+t.dataset.i,L=LEVELS[i],r=t.closest('.chapter').querySelector('.readout');
+    r.innerHTML='<b>Level '+(i+1)+': '+esc(L.name)+'.</b> '+esc(L.quip||L.teach||'');
+  }
+  host.addEventListener('click',function(e){var t=e.target.closest('.tile');if(t){show(t);playLevel(+t.dataset.i)}});
+  host.addEventListener('pointerover',function(e){var t=e.target.closest('.tile');if(t)show(t)});
+  host.addEventListener('focusin',function(e){var t=e.target.closest('.tile');if(t)show(t)});
+}
+renderLevels();
+
+sync();
+})();
 </script>
 </body>
 </html>
