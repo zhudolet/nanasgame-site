@@ -119,7 +119,9 @@ p{margin:0}
 .city-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px 40px;align-items:end}
 .city-head p{max-width:56ch;margin-top:12px;color:var(--muted)}
 .tally{font-family:var(--display);font-weight:600;font-size:17px;text-align:right;font-variant-numeric:tabular-nums}
-.tally b{display:block;font-size:44px;line-height:1;color:var(--gold);font-weight:700}
+.tally b{display:block;font-size:40px;line-height:1.05;color:var(--gold);font-weight:700}
+.meter{height:10px;margin-top:10px;border-radius:999px;background:var(--dusk);box-shadow:inset 0 0 0 2px #34317a;overflow:hidden}
+.meter i{display:block;height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#ffb300,var(--gold))}
 .tally .btn{margin-top:14px}
 .shots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,3vw,36px);margin-top:clamp(24px,4vw,40px)}
 .shots figure{margin:0;min-width:0}
@@ -271,7 +273,8 @@ footer nav{display:flex;gap:6px 20px;flex-wrap:wrap}
       <p>The level map is now a night city. Every level you clear switches on a little more of it, district by district, until the whole place glows.</p>
     </div>
     <div class="tally" aria-live="polite">
-      <b id="litN">0</b><span id="litT">of 60 levels lit by you</span>
+      <b id="litN">0 / 60</b><span id="litT">levels lit by you</span>
+      <div class="meter" aria-hidden="true"><i id="litBar"></i></div>
       <div><button class="btn sm" id="openMap" type="button">Open the city map</button></div>
     </div>
   </div>
@@ -445,8 +448,9 @@ function sync(){
   prog=readProg();
   var lit=0,stars=0,n=LEVELS.length||60,i;
   for(i=0;i<n;i++){var s=starsOf(i);if(s){lit++;stars+=s}}
-  $('litN').textContent=lit;
-  $('litT').textContent='of '+n+' levels lit by you'+(stars?', '+stars+' of '+n*3+' stars':'');
+  $('litBar').style.width=(100*lit/n)+'%';
+  $('litN').textContent=lit+' / '+n;
+  $('litT').textContent='levels lit by you'+(stars?', '+stars+' of '+n*3+' stars':'');
   document.querySelectorAll('.tile').forEach(function(t){
     var s=starsOf(+t.dataset.i);t.classList.toggle('done',s>0);
     var sm=t.querySelector('small');if(sm)sm.textContent=s?'★★★'.slice(0,s):'';
